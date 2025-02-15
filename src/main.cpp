@@ -12,7 +12,10 @@ const int RECV_PIN = D6;
 
 #include <IRremote.hpp> // include the library
 
-#define NUM_LEDS 3
+#define NUM_LEDS   30  // Numero di LED sulla striscia
+#define SPEED      50  // Velocità dello spostamento (ms tra aggiornamenti)
+#define BRIGHTNESS 255 // Luminosità massima
+
 #define PIN_LEDS D4
 
 ESP8266WebServer server(80);
@@ -21,36 +24,23 @@ Adafruit_NeoPixel pixels(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
 #define IR_RECEIVE_PIN D6
 
+bool flux_state = false;
+
 void handleFlux() {
   JsonDocument doc;
   String body = server.arg("plain");
   deserializeJson(doc, body);
-  bool status = doc["status"];
-
-  // digitalWrite(FLUX_PIN, status ? HIGH : LOW);
-
-  int color = status ? 255 : 0;
-
-  pixels.clear();
-  for (int i = 0; i < NUM_LEDS; i++) {
-    pixels.setPixelColor(i, pixels.Color(color, 0, 0));  // LED rosso
-    pixels.show();
-  }
-
+  flux_state = doc["status"];
   lcd.setCursor(0, 2);
-  lcd.print(status ? "Flux On!" : "Flux Off!");
-  server.send(200, "text/plain", status ? "ON" : "OFF");
+  lcd.print("Flux ");
+  lcd.print(flux_state ? "on" : "off");
 
-  IrReceiver.begin(RECV_PIN, ENABLE_LED_FEEDBACK);
 
-  Serial.print(F("Ready to receive IR signals of protocols: "));
-  printActiveIRProtocols(&Serial);
-  //Serial.println(F("at pin " STR(RECV_PIN)));
+  server.send(200, "text/plain", flux_state ? "on" : "off");
 }
 
 void setup() {
   Serial.begin(9600);
-
 
   Serial.println("\nScanning I2C devices...");
 
@@ -85,9 +75,9 @@ void setup() {
 
   // Se arriva qui, significa che è connesso alla WiFi
   lcd.home();
-  lcd.println("WiFi connessa!");
+  lcd.print("WiFi connessa!");
   lcd.setCursor(0, 1);
-  lcd.println(WiFi.localIP().toString());
+  lcd.print(WiFi.localIP().toString());
   lcd.setCursor(0, 2);
 
   server.on("/", HTTP_GET, []() {
@@ -190,39 +180,68 @@ void setup() {
   pixels.show();
 }
 
+
+void handle_ir() {
+  if (!IrReceiver.decode()) return;
+
+  flux_state = !flux_state;
+  /*
+   * Print a summary of received data
+   */
+  if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
+    Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
+    // We have an unknown protocol here, print extended info
+    IrReceiver.printIRResultRawFormatted(&Serial, true);
+
+    IrReceiver.resume(); // Do it here, to preserve raw data for printing with printIRResultRawFormatted()
+  } else {
+    IrReceiver.resume(); // Early enable receiving of the next IR frame
+
+    IrReceiver.printIRResultShort(&Serial);
+    IrReceiver.printIRSendUsage(&Serial);
+  }
+  Serial.println();
+
+  /*
+   * Finally, check the received data and perform actions according to the received command
+   */
+  if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT) {
+    Serial.println(F("Repeat received. Here you can repeat the same action as before."));
+  } else {
+    if (IrReceiver.decodedIRData.command == 0x10) {
+      // do something
+    } else if (IrReceiver.decodedIRData.command == 0x11) {
+      // do something else
+    }
+  }
+}
+
+void loop_pixels() {
+  if (!flux_state) {
+    pixels.clear();
+    pixels.show();
+    return;
+  }
+
+  static float phase = 0.0;
+  float waveSpeed = 0.05;  // Velocità di avanzamento dell'onda
+  float frequency = 0.3;  // Densità dell'onda (più alto = più cicli sulla striscia)
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    // Calcola un valore di luminosità basato su una sinusoide
+    float intensity = (sin(frequency * i + phase) + 1.0) / 2.0;
+    uint8_t brightness = (uint8_t)(intensity * BRIGHTNESS);
+
+    // Imposta il colore (es. bianco con intensità variabile)
+    pixels.setPixelColor(i, pixels.Color(brightness, brightness, brightness));
+  }
+
+  pixels.show();
+  phase += waveSpeed; // Avanza la fase per spostare l'onda
+}
+
 void loop() {
   server.handleClient();
-if (IrReceiver.decode()) {
-
-        /*
-         * Print a summary of received data
-         */
-        if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
-            Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
-            // We have an unknown protocol here, print extended info
-            IrReceiver.printIRResultRawFormatted(&Serial, true);
-
-            IrReceiver.resume(); // Do it here, to preserve raw data for printing with printIRResultRawFormatted()
-        } else {
-            IrReceiver.resume(); // Early enable receiving of the next IR frame
-
-            IrReceiver.printIRResultShort(&Serial);
-            IrReceiver.printIRSendUsage(&Serial);
-        }
-        Serial.println();
-
-        /*
-         * Finally, check the received data and perform actions according to the received command
-         */
-        if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT) {
-            Serial.println(F("Repeat received. Here you can repeat the same action as before."));
-        } else {
-            if (IrReceiver.decodedIRData.command == 0x10) {
-                // do something
-            } else if (IrReceiver.decodedIRData.command == 0x11) {
-                // do something else
-            }
-        }
-    }
-
+  handle_ir();
+  loop_pixels();
 }
