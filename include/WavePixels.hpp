@@ -11,11 +11,9 @@ class WavePixels {
         constexpr static float BRIGHTNESS = 255.0f;
 
         WavePixels(const uint pin_led, const int num_leds_, const int brightness = 255):
-            num_leds(num_leds_),
             pixels(num_leds, pin_led, NEO_GRB + NEO_KHZ800),
-            state(false)
-        {
-        }
+            num_leds(num_leds_),
+            state(false) {}
 
         void update(const unsigned int delta);
         void render();
@@ -27,6 +25,8 @@ class WavePixels {
             pixels.clear();
             state = false;
         }
+
+        inline const bool get_state() const { return state; }
 
     private:
         int i;
