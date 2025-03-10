@@ -6,6 +6,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_NeoPixel.h>
 
+#if 0
+
 const int RECV_PIN = D6;
 // IRrecv irrecv(RECV_PIN);
 // decode_results results;
@@ -244,4 +246,17 @@ void loop() {
   server.handleClient();
   handle_ir();
   loop_pixels();
+}
+
+
+#endif
+
+App app;
+
+void setup() {
+  app.setup();
+}
+
+void loop() {
+  app.loop();
 }
