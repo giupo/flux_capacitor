@@ -109,7 +109,7 @@ void WebServer::handle_flux() {
   JsonDocument doc;
   String body = server.arg("plain");
   deserializeJson(doc, body);
-  bool state = doc["status"];
+  bool command_state = doc["status"];
 
   if (!lcd || !pixels) {
     // no lcd or pixels? Nothing to do here..
@@ -119,7 +119,7 @@ void WebServer::handle_flux() {
 
   lcd->setCursor(0, 2);
   lcd->print("Flux ");
-  state ? pixels->turn_on() : pixels->turn_off();
-  lcd->print(pixels->get_state() ? "on" : "off");
-  server.send(200, "text/plain", pixels->get_state() ? "on" : "off");
+  command_state ? pixels->turn_on() : pixels->turn_off();
+  lcd->print(pixels->is_on() ? "on " : "off");
+  server.send(200, "text/plain", pixels->is_on() ? "on" : "off");
 }

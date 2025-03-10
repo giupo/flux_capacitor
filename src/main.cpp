@@ -1,3 +1,9 @@
+#include "App.hpp"
+
+
+#if 0
+
+
 #include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -5,8 +11,6 @@
 #include <WiFiManager.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_NeoPixel.h>
-
-#if 0
 
 const int RECV_PIN = D6;
 // IRrecv irrecv(RECV_PIN);

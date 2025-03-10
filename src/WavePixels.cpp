@@ -1,13 +1,11 @@
 #include "WavePixels.hpp"
 
+void WavePixels::setup() {
+  pixels.begin();
+}
 
 void WavePixels::update(const uint delta) {
-  if (!state) return;
-
-  static float phase = 0.0;
-  float waveSpeed = 0.05;  // Velocità di avanzamento dell'onda
-  float frequency = 0.3;  // Densità dell'onda (più alto = più cicli sulla striscia)
-
+  clear();
   for (int i = 0; i < num_leds; i++) {
     // Calcola un valore di luminosità basato su una sinusoide
     // float intensity = (sin(frequency * i + phase) + 1.0) / 2.0;
@@ -17,15 +15,22 @@ void WavePixels::update(const uint delta) {
     // Imposta il colore (es. bianco con intensità variabile)
     pixels.setPixelColor(i, pixels.Color(brightness, brightness, brightness));
   }
-
-  phase += waveSpeed; // Avanza la fase per spostare l'onda
-
 }
 
 void WavePixels::render() {
-    pixels.show();
+  if (is_off()) clear();
+  pixels.show();
 }
 
 void WavePixels::clear() {
-    pixels.clear();
+  pixels.clear();
+}
+
+void WavePixels::turn_on() {
+  state = true;
+  Serial.println("Pixels are On!");
+}
+void WavePixels::turn_off() {
+  state = false;
+  Serial.println("Pixels are Off!");
 }

@@ -13,9 +13,10 @@ struct LCDParams {
 };
 
 struct AppParams {
-    constexpr static auto AP_SSID = "Flux_Capacitor_Config";
+    constexpr static auto AP_SSID = "ESP_Config";
     constexpr static unsigned int PIXELS_LED = D4;
     constexpr static unsigned int NUM_PIXELS = 30;
+    constexpr static unsigned int HTTP_PORT = 80;
 };
 
 class App {
@@ -23,7 +24,7 @@ class App {
         App():
             pixels(AppParams::PIXELS_LED, AppParams::NUM_PIXELS),
             lcd(LCDParams::ADDRESS,  LCDParams::ROWS, LCDParams::COLS),
-            server(80)
+            server(AppParams::HTTP_PORT)
         {
             start_time = last_time = now = 0;
         }
