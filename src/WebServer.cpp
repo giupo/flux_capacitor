@@ -80,13 +80,17 @@ void WebServer::setup() {
                    isOn = true;
                  }
 
+                 const gap = 200; // m-seconds
+                 const duration = 3000; // m-seconds
                  // flip
                  isOn = !isOn;
                  document.querySelectorAll('.flux').forEach((el, i) => {
                    if (isOn) {
-                      setTimeout(() => el.classList.add('active'), i * 200);
+                      setTimeout(() => el.classList.add('active'), i * gap);
+                      setTimeout(() => el.classList.remove('active'), (i * gap) + duration);
+
                    } else {
-                      setTimeout(() => el.classList.remove('active'), i * 200);
+                      setTimeout(() => el.classList.remove('active'), i * gap);
                    }
                  });
 
