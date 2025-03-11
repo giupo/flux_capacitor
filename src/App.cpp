@@ -5,13 +5,6 @@
 #include <WiFiManager.h>
 
 void App::setup_lcd() {
-    lcd.begin(); //initialize the lcd
-    lcd.backlight(); //open the backlight
-}
-
-void App::setup_wifi() {
-    WiFiManager wm;
-
     Serial.begin(9600);
     Serial.println("\nScanning I2C devices...");
 
@@ -25,6 +18,14 @@ void App::setup_wifi() {
         }
     }
     Serial.println("Scansione completata.");
+
+
+    lcd.begin(); //initialize the lcd
+    lcd.backlight(); //open the backlight
+}
+
+void App::setup_wifi() {
+    WiFiManager wm;
 
     lcd.home();
     lcd.print("Connecting..");
@@ -41,18 +42,20 @@ void App::setup_wifi() {
 
     // Se arriva qui, significa che è connesso alla WiFi
     lcd.home();
-    lcd.print("WiFi connessa!");
-    lcd.setCursor(0, 1);
+    lcd.print("IP: ");
+    lcd.setCursor(4, 0);
     lcd.print(WiFi.localIP().toString());
-    lcd.setCursor(0, 2);
+    lcd.setCursor(0, 1);
 }
 
 void App::setup() {
     start_time = last_time = millis();
+
+    // turn off lights as soon as possibile
+    pixels.setup();
+
     setup_lcd();
     setup_wifi();
-
-    pixels.setup();
     server.lcd = &lcd;
     server.pixels = &pixels;
 

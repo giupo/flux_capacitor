@@ -16,8 +16,10 @@ class WebServer {
         void setup();
         void loop();
 
+
         // handlers
         void handle_flux();
+        void handle_reset();
 
         WavePixels* pixels = nullptr;
         LiquidCrystal_I2C* lcd = nullptr;

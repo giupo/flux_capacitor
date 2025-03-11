@@ -15,7 +15,7 @@ struct LCDParams {
 struct AppParams {
     constexpr static auto AP_SSID = "ESP_Config";
     constexpr static unsigned int PIXELS_LED = D4;
-    constexpr static unsigned int NUM_PIXELS = 30;
+    constexpr static unsigned int NUM_PIXELS = 11;
     constexpr static unsigned int HTTP_PORT = 80;
 };
 

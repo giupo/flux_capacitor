@@ -71,20 +71,31 @@ void WebServer::setup() {
     <script>
         let isOn = false;
         function toggleFlux() {
-            isOn = !isOn;
-            document.querySelectorAll('.flux').forEach((el, i) => {
-                if (isOn) {
-                    setTimeout(() => el.classList.add('active'), i * 200);
-                } else {
-                    setTimeout(() => el.classList.remove('active'), i * 200);
-                }
+
+            fetch('/flux', { method: 'GET'})
+              .then(response => response.text())
+              .then((data) =>  {
+                 let isOn = false;
+                 if (data === "on") {
+                   isOn = true;
+                 }
+
+                 // flip
+                 isOn = !isOn;
+                 document.querySelectorAll('.flux').forEach((el, i) => {
+                   if (isOn) {
+                      setTimeout(() => el.classList.add('active'), i * 200);
+                   } else {
+                      setTimeout(() => el.classList.remove('active'), i * 200);
+                   }
+                 });
+
+                 fetch('/flux', { method: 'POST', body: JSON.stringify({ status: isOn }) })
+                   .then(response => response.text())
+                   .then(data => console.log("Flux:", data))
+                   .catch(err => console.error("Errore:", err));
             });
 
-            // Invia il comando alla ESP8266
-            fetch('/flux', { method: 'POST', body: JSON.stringify({ status: isOn }) })
-            .then(response => response.text())
-            .then(data => console.log("ESP8266:", data))
-            .catch(err => console.error("Errore:", err));
         }
     </script>
 </body>
@@ -98,6 +109,12 @@ void WebServer::setup() {
 
   // Avvia il server web
   server.on("/flux", HTTP_POST, std::bind(&WebServer::handle_flux, this));
+  server.on("/flux", HTTP_GET, [this]() {
+    server.send(200, "text/plain", pixels->is_on() ? "on" : "off");
+  });
+
+  server.on("/reset", HTTP_GET, std::bind(&WebServer::handle_reset, this));
+
   server.begin();
 }
 
@@ -117,9 +134,21 @@ void WebServer::handle_flux() {
     return;
   }
 
-  lcd->setCursor(0, 2);
+  lcd->setCursor(0, 1);
   lcd->print("Flux ");
   command_state ? pixels->turn_on() : pixels->turn_off();
   lcd->print(pixels->is_on() ? "on " : "off");
   server.send(200, "text/plain", pixels->is_on() ? "on" : "off");
+}
+
+void WebServer::handle_reset() {
+  if (lcd) {
+    lcd->home();
+    lcd->print("Richiesto Reset");
+    lcd->setCursor(0, 1);
+    lcd->print("Riavvio...");
+  }
+  delay(2000);
+  WiFi.disconnect();
+  ESP.restart();
 }

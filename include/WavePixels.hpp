@@ -28,6 +28,8 @@ class WavePixels {
         void turn_on();
         void turn_off();
 
+        void moving_pulse(unsigned char r, unsigned char g, unsigned char b, unsigned char brightness);
+        void moving_trail(uint8_t r, uint8_t g, uint8_t b, const uint8_t tail_size);
 
         inline const bool get_state() const { return state; }
 
@@ -38,12 +40,10 @@ class WavePixels {
         const int num_leds;
         bool state;
 
-        float wave[30] = {
-           1.0000, 0.9950, 0.9802, 0.9560, 0.9231, 0.8825, 0.8353, 0.7830,
-           0.7270, 0.6690, 0.6105, 0.5527, 0.4968, 0.4438, 0.3944, 0.3492,
-           0.3083, 0.2718, 0.2395, 0.2113, 0.1868, 0.1656, 0.1472, 0.1312,
-           0.1173, 0.1052, 0.0945, 0.0851, 0.0767, 0.0692
-        };
+        int pos = 0;
+        int direction = 1;
+        unsigned int gap_time;
+        constexpr static auto GAP_TIME = 150;
 };
 
 #endif // WAVEPIXELS_H_
