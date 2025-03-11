@@ -4,8 +4,12 @@
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
 
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>
+#include <IRremote.hpp> // include the library
+
+
 void App::setup_lcd() {
-    Serial.begin(9600);
     Serial.println("\nScanning I2C devices...");
 
     Wire.begin();
@@ -48,6 +52,24 @@ void App::setup_wifi() {
     lcd.setCursor(0, 1);
 }
 
+void App::setup_audio() {
+    serial.begin(9600); // Comunicazione con il modulo
+    serial.print("ciao mondo");
+    if (!player.begin(serial)) {
+        Serial.println("Modulo audio non trovato!");
+        return;
+    }
+
+    Serial.println("Modulo audio pronto");
+    player.volume(20); // Imposta il volume (0-30)
+    player.play(1); // Riproduce il primo file nella SD
+}
+
+void App::setup_ir() {
+    IrReceiver.begin(AppParams::IR_PIN, ENABLE_LED_FEEDBACK);
+    Serial.println("Ricevitore IR pronto!");
+}
+
 void App::setup() {
     start_time = last_time = millis();
 
@@ -56,6 +78,9 @@ void App::setup() {
 
     setup_lcd();
     setup_wifi();
+    setup_audio();
+    setup_ir();
+
     server.lcd = &lcd;
     server.pixels = &pixels;
 
@@ -65,6 +90,16 @@ void App::setup() {
 
 void App::update(const unsigned int delta) {
     server.loop();
+    if (IrReceiver.decode()) {  // Controlla se è stato ricevuto un segnale
+        Serial.print("Codice ricevuto: ");
+        IR_Keys pressed = (IR_Keys) IrReceiver.decodedIRData.decodedRawData;
+        Serial.println(IrReceiver.decodedIRData.decodedRawData, HEX); // Mostra il codice IR ricevuto in HEX
+        IrReceiver.resume();
+        if (pressed == IR_Keys::K_OK) {
+            pixels.turn_on();
+        }
+
+    }
     pixels.update(delta);
 }
 

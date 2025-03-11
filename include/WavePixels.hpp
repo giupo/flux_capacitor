@@ -8,12 +8,21 @@
 
 class WavePixels {
     public:
+
+        constexpr static uint8_t MAX_VALUE = -1;
+
+        enum class State: uint {
+           OFF = 0,
+           PULSE = 1,
+           FLASH = 2
+        };
+
         constexpr static float BRIGHTNESS = 255.0f;
 
         WavePixels(const uint pin_led, const int num_leds_, const int brightness = 255):
             pixels(num_leds_, pin_led, NEO_GRB + NEO_KHZ800),
             num_leds(num_leds_),
-            state(false) {
+            state(State::OFF) {
         }
 
         void setup();
@@ -21,29 +30,39 @@ class WavePixels {
         void render();
         void clear();
 
-        inline const bool is_on() const { return state == true; }
-        inline const bool is_off() const { return state == false; }
 
-        void inline toggle() { state ? turn_off(): turn_on(); };
+        // states
+        void pulse();
+        void flash();
+
+        inline const bool is_on() const { return state != State::OFF; }
+        inline const bool is_off() const { return state == State::OFF; }
+
+        void inline toggle() { state == State::OFF ? turn_on(): turn_off(); };
         void turn_on();
         void turn_off();
 
-        void moving_pulse(unsigned char r, unsigned char g, unsigned char b, unsigned char brightness);
-        void moving_trail(uint8_t r, uint8_t g, uint8_t b, const uint8_t tail_size);
+        void moving_flash();
+        void moving_pulse(
+          const uint8_t r,
+          const uint8_t g,
+          const uint8_t b,
+          const uint8_t tail_size
+        );
 
-        inline const bool get_state() const { return state; }
+        inline const State get_state() const { return state; }
 
     private:
-        int i;
         Adafruit_NeoPixel pixels;
         // Adafruit_NeoPixel pixels(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
         const int num_leds;
-        bool state;
+        State state;
 
         int pos = 0;
         int direction = 1;
-        unsigned int gap_time;
-        constexpr static auto GAP_TIME = 150;
+        unsigned long gap_time;
+        unsigned long assigned_gap_time = 80;
+        uint8_t count_flash = 5;
 };
 
 #endif // WAVEPIXELS_H_

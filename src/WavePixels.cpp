@@ -6,17 +6,27 @@ void WavePixels::setup() {
 }
 
 void WavePixels::update(const uint delta) {
+  // record time passing by...
   gap_time += delta;
 
-  // non fare niente  meno di 300ms
-  if (gap_time < GAP_TIME) return;
-
+  // non fare niente
+  if (gap_time < assigned_gap_time) return;
   gap_time = 0;
 
-  if (is_off()) return;
+  if (state == State::PULSE) {
+    moving_pulse(255, 220, 190, 5);
 
-//  moving_pulse(255, 125, 19, 10);
-  moving_trail(230, 230, 230, 3);
+    assigned_gap_time--;
+    if (assigned_gap_time == 0) {
+      flash();
+    }
+  } else if (state == State::FLASH) {
+    moving_flash();
+
+    if (count_flash == 0) {
+      turn_off();
+    }
+  }
 }
 
 void WavePixels::render() {
@@ -29,68 +39,83 @@ void WavePixels::clear() {
 }
 
 void WavePixels::turn_on() {
-  state = true;
-  Serial.println("Pixels are On!");
+  pulse();
 }
 
 void WavePixels::turn_off() {
-  state = false;
+  pos = 0;
+  state = State::OFF;
   Serial.println("Pixels are Off!");
 }
 
 
-void WavePixels::moving_pulse(uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) {
-    // pos = 0;
-    // direction = 1; // 1 = avanti, -1 = indietro
+void WavePixels::pulse() {
+  assigned_gap_time = 80;
+  pos = 0;
+  gap_time = 0;
+  state = State::PULSE;
+  Serial.println("Pixels are pulsating!");
+}
 
-    pixels.clear();
+void WavePixels::flash() {
+  assigned_gap_time = 100;
+  count_flash = 15;
+  pos = 0;
+  gap_time = 0;
+  state = State::FLASH;
+  Serial.println("Pixels are flashing!");
+}
 
-    constexpr static auto TAIL_SIZE = 8;
-    // Crea una dissolvenza a coda
-    for (int i = 0; i < TAIL_SIZE; i++) {
-        int index = pos - i;
-        if (index >= 0 && index < num_leds) {
-            int fade = map(i, 0, TAIL_SIZE - 1, brightness, 10);
-            pixels.setPixelColor(index, pixels.Color(r * fade / 255, g * fade / 255, b * fade / 255));
-        }
+// Effetto con dissolvenza nella scia
+void WavePixels::moving_pulse(
+  const uint8_t r,
+  const uint8_t g,
+  const uint8_t b,
+  const uint8_t tail_size
+) {
+  pixels.clear();
+
+  // Crea la scia con effetto di dissolvenza
+  for (int i = 0; i < tail_size; i++) {
+    int index = pos - i;
+    if (index >= 0 && index < num_leds) {
+      unsigned char brightness = map(index, 0, tail_size, MAX_VALUE, 20); // Luminosità decrescente
+      pixels.setPixelColor(
+        index,
+        r * brightness / MAX_VALUE,
+        g * brightness / MAX_VALUE,
+        b * brightness / MAX_VALUE
+      );
     }
+  }
 
     pixels.show();
 
     // Movimento avanti e indietro
     pos += direction;
     if (pos >= num_leds - 1 || pos <= 0) {
-        direction *= -1;
+        //direction += -1;
+        pos = 0;
     }
 }
 
+void WavePixels::moving_flash() {
+  pixels.clear();
 
-// Effetto con dissolvenza nella scia
-void WavePixels::moving_trail(uint8_t r, uint8_t g, uint8_t b, const uint8_t tail_size) {
-    pixels.clear();
+  uint8_t brightness = MAX_VALUE;
+  if (--count_flash % 2 == 0) {
+    brightness = 24;
+  }
 
-    // Crea la scia con effetto di dissolvenza
-    for (int i = 0; i < tail_size; i++) {
-        int index = pos - i;
-        if (index >= 0 && index < num_leds) {
-            unsigned char brightness = map(index, 0, tail_size, 255, 1); // Luminosità decrescente
-            pixels.setPixelColor(
-              index,
-              pixels.Color(
-                r, //* brightness / 255,
-                g, //* brightness / 255,
-                b, //* brightness / 255,
-                brightness
-              )
-            );
-        }
-    }
+  // Crea la scia con effetto di dissolvenza
+  for (int i = 0; i < num_leds; i++) {
+    pixels.setPixelColor(
+      i,
+      brightness,
+      brightness,
+      brightness
+    );
+  }
 
-    pixels.show();
-
-    // Movimento avanti e indietro
-    pos += direction;
-    if (pos >= num_leds - 1 || pos <= 0) {
-        direction *= -1;
-    }
+  pixels.show();
 }
